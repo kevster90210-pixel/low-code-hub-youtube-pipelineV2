@@ -1,0 +1,2 @@
+notebooklm-py>=0.3.3
+httpx>=0.27.0
