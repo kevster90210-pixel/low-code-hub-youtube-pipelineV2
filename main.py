@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 
 import httpx
-from notebooklm import NotebookLMClient
+from notebooklm import AudioFormat, NotebookLMClient, SlideDeckFormat
 
 # -- Config --
 RSS_URL = os.getenv(
@@ -25,13 +25,32 @@ RSS_URL = os.getenv(
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "/app/outputs"))
 NOTEBOOK_TITLE = os.getenv("NOTEBOOK_TITLE", "SharePoint Roadmap Update")
 
-AUDIO_FORMAT = os.getenv("AUDIO_FORMAT", "deep-dive")
+# Map string env var values to AudioFormat enum members
+_AUDIO_FORMAT_MAP = {
+    "deep-dive": AudioFormat.DEEP_DIVE,
+    "brief": AudioFormat.BRIEF,
+    "critique": AudioFormat.CRITIQUE,
+    "debate": AudioFormat.DEBATE,
+}
+AUDIO_FORMAT = _AUDIO_FORMAT_MAP.get(
+    os.getenv("AUDIO_FORMAT", "deep-dive").lower(), AudioFormat.DEEP_DIVE
+)
+
 AUDIO_INSTRUCTIONS = os.getenv(
     "AUDIO_INSTRUCTIONS",
     "Make it informative and accessible for IT admins and end-users alike.",
 )
 
-SLIDE_FORMAT = os.getenv("SLIDE_FORMAT", "detailed")
+# Map string env var values to SlideDeckFormat enum members
+_SLIDE_FORMAT_MAP = {
+    "detailed": SlideDeckFormat.DETAILED_DECK,
+    "detailed_deck": SlideDeckFormat.DETAILED_DECK,
+    "presenter": SlideDeckFormat.PRESENTER_SLIDES,
+    "presenter_slides": SlideDeckFormat.PRESENTER_SLIDES,
+}
+SLIDE_FORMAT = _SLIDE_FORMAT_MAP.get(
+    os.getenv("SLIDE_FORMAT", "detailed").lower(), SlideDeckFormat.DETAILED_DECK
+)
 
 VIZARD_API_KEY = os.getenv("VIZARD_API_KEY", "")
 VIZARD_SOCIAL_ID = os.getenv("VIZARD_SOCIAL_ID", "")
@@ -148,7 +167,7 @@ async def run():
         )
         print("  Source added and indexed")
 
-        print(f"\nGenerating Audio Overview ({AUDIO_FORMAT}) ...")
+        print(f"\nGenerating Audio Overview ({AUDIO_FORMAT.name}) ...")
         audio_status = await client.artifacts.generate_audio(
             nb_id,
             audio_format=AUDIO_FORMAT,
@@ -181,7 +200,7 @@ async def run():
         else:
             print("\nSkipping Vizard publish -- no video file available.")
 
-        print(f"\nGenerating Slide Deck ({SLIDE_FORMAT}) ...")
+        print(f"\nGenerating Slide Deck ({SLIDE_FORMAT.name}) ...")
         slide_status = await client.artifacts.generate_slide_deck(
             nb_id,
             slide_format=SLIDE_FORMAT,
