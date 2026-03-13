@@ -9,7 +9,6 @@ Auth: set NOTEBOOKLM_AUTH_JSON env var (no Playwright needed on Railway).
 
 import asyncio
 import os
-import time
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
@@ -49,12 +48,14 @@ def fetch_rss_item(url: str) -> dict:
     item = root.find(".//item")
     if item is None:
         raise ValueError("No <item> found in RSS feed")
+    updated_el = item.find("atom:updated", ns)
+    updated = updated_el.text if updated_el is not None else ""
     return {
         "title": (item.findtext("title") or "").strip(),
         "link": (item.findtext("link") or "").strip(),
         "description": (item.findtext("description") or "").strip(),
         "pubDate": (item.findtext("pubDate") or "").strip(),
-        "updated": (item.find("atom:updated", ns) or item).text or "",
+        "updated": updated,
     }
 
 
