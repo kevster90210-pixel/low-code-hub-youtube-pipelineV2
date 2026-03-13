@@ -184,7 +184,7 @@ async def run():
         print(f"\nGenerating Slide Deck ({SLIDE_FORMAT}) ...")
         slide_status = await client.artifacts.generate_slide_deck(
             nb_id,
-            slide_deck_type=SLIDE_FORMAT,
+            slide_format=SLIDE_FORMAT,
         )
         await client.artifacts.wait_for_completion(nb_id, slide_status.task_id)
         print("  Slides ready")
