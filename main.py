@@ -140,13 +140,18 @@ async def run():
         print(f"  Notebook ID: {nb_id}")
 
         print(f"\nAdding roadmap item as text source: {item['title']!r} ...")
-        await client.sources.add_text(nb_id, source_text, title=item["title"], wait=True)
+        await client.sources.add_text(
+            nb_id,
+            title=item["title"],
+            content=source_text,
+            wait=True,
+        )
         print("  Source added and indexed")
 
         print(f"\nGenerating Audio Overview ({AUDIO_FORMAT}) ...")
         audio_status = await client.artifacts.generate_audio(
             nb_id,
-            audio_overview_type=AUDIO_FORMAT,
+            audio_format=AUDIO_FORMAT,
             instructions=AUDIO_INSTRUCTIONS,
         )
         await client.artifacts.wait_for_completion(nb_id, audio_status.task_id)
