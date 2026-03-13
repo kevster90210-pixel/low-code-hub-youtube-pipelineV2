@@ -43,20 +43,20 @@ def fetch_rss_item(url: str) -> dict:
     with httpx.Client(follow_redirects=True, timeout=30) as client:
         resp = client.get(url)
         resp.raise_for_status()
-    root = ET.fromstring(resp.text)
-    ns = {"atom": "http://www.w3.org/2005/Atom"}
-    item = root.find(".//item")
-    if item is None:
-        raise ValueError("No <item> found in RSS feed")
-    updated_el = item.find("atom:updated", ns)
-    updated = updated_el.text if updated_el is not None else ""
-    return {
-        "title": (item.findtext("title") or "").strip(),
-        "link": (item.findtext("link") or "").strip(),
-        "description": (item.findtext("description") or "").strip(),
-        "pubDate": (item.findtext("pubDate") or "").strip(),
-        "updated": updated,
-    }
+        root = ET.fromstring(resp.text)
+        ns = {"atom": "http://www.w3.org/2005/Atom"}
+        item = root.find(".//item")
+        if item is None:
+            raise ValueError("No <item> found in RSS feed")
+        updated_el = item.find("atom:updated", ns)
+        updated = updated_el.text if updated_el is not None else ""
+        return {
+            "title": (item.findtext("title") or "").strip(),
+            "link": (item.findtext("link") or "").strip(),
+            "description": (item.findtext("description") or "").strip(),
+            "pubDate": (item.findtext("pubDate") or "").strip(),
+            "updated": updated,
+        }
 
 
 def ts() -> str:
@@ -106,9 +106,9 @@ def vizard_publish_to_youtube(video_path: Path, title: str):
                 "privacyStatus": "public",
             },
         )
-        pub_resp.raise_for_status()
-        pub_data = pub_resp.json()
-        print(f"  Publish response: {pub_data}")
+    pub_resp.raise_for_status()
+    pub_data = pub_resp.json()
+    print(f"  Publish response: {pub_data}")
 
     print("  Published to YouTube successfully!")
     return video_id
@@ -126,6 +126,11 @@ async def run():
 
     notebook_title = os.getenv("NOTEBOOK_TITLE") or item["title"] or NOTEBOOK_TITLE
 
+    # Build the source text from the actual roadmap item content (title + description).
+    # Using text avoids relying on the roadmap URL which is a JS-rendered SPA page
+    # that NotebookLM cannot properly index.
+    source_text = f"# {item['title']}\n\n{item['description']}\n\nRoadmap link: {item['link']}\nPublished: {item['pubDate']}"
+
     print("\nConnecting to NotebookLM ...")
     async with await NotebookLMClient.from_storage() as client:
 
@@ -134,8 +139,8 @@ async def run():
         nb_id = nb.id
         print(f"  Notebook ID: {nb_id}")
 
-        print(f"\nAdding source URL: {item['link']} ...")
-        await client.sources.add_url(nb_id, item["link"], wait=True)
+        print(f"\nAdding roadmap item as text source: {item['title']!r} ...")
+        await client.sources.add_text(nb_id, source_text, title=item["title"], wait=True)
         print("  Source added and indexed")
 
         print(f"\nGenerating Audio Overview ({AUDIO_FORMAT}) ...")
@@ -182,7 +187,7 @@ async def run():
         pdf_path = OUTPUT_DIR / f"slides_{ts()}.pdf"
         pptx_path = OUTPUT_DIR / f"slides_{ts()}.pptx"
         await client.artifacts.download_slide_deck(nb_id, str(pdf_path), output_format="pdf")
-        print(f"  Saved PDF  -> {pdf_path}")
+        print(f"  Saved PDF -> {pdf_path}")
         await client.artifacts.download_slide_deck(nb_id, str(pptx_path), output_format="pptx")
         print(f"  Saved PPTX -> {pptx_path}")
 
